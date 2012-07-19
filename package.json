@@ -1,0 +1,20 @@
+{
+  "name": "resred",
+  "version": "0.0.0",
+  "description": "Redis storage engine for flatiron/resourceful",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tompro/resred.git"
+  },
+  "keywords": [
+    "flatiron",
+    "resourceful",
+    "redis"
+  ],
+  "author": "ProTom",
+  "license": "BSD"
+}
