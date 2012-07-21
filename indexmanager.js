@@ -35,6 +35,10 @@ IndexManager.prototype.setupSchema = function(schema) {
 	}
 }
 
+IndexManager.prototype.addIndexedProperty = function(property) {
+
+}
+
 /**
  * Looks up and validates redis indexes in a given sheme object. Returns true 
  * if a scheme has redis properties that are valid.
@@ -108,6 +112,11 @@ var sampleIndexDefinition = {
 	"prop2": ["index"], // works for all types
 	"prop3": ["sort"] // works for number types or if a converter function is provided we can apply conversion
 }
+
+// updateIndex(ns, id, name, value) {
+// 		
+// 
+// }
 
 
 // UNIQUE EXAMLPE

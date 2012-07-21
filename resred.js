@@ -2,6 +2,7 @@ var redis = require("redis"),
 	url = require("url"),
 	resourceful = require("resourceful");
 
+var connections = {};
 
 /**
  * Resred engine constructor
@@ -24,20 +25,24 @@ var Resred = exports.Resred = function(options) {
 	}
 
 	if (this.uri && !options.connection) {
-		var uri = url.parse('redis://' + this.uri, true);
-
-		this.host = uri.hostname;
-		this.port = parseInt(uri.port, 10);
-
-		if(uri.auth) {
-			var auth = uri.auth.split(':');
-			this.database = auth[0];
-			this.pass = auth[1];
+		if(connections[this.uri]) {
+			this.connection = connections[this.uri];
 		}
+		else {
+			var uri = url.parse('redis://' + this.uri, true);
+			this.host = uri.hostname;
+			this.port = parseInt(uri.port, 10);
 
-		this.connection = redis.createClient(options.port, this.host);
-		if (this.pass) {
-			this.connection.auth(this.pass);
+			if(uri.auth) {
+				var auth = uri.auth.split(':');
+				this.database = auth[0];
+				this.pass = auth[1];
+			}
+
+			connections[this.uri] = this.connection = redis.createClient(options.port, this.host);
+			if (this.pass) {
+				this.connection.auth(this.pass);
+			}
 		}
 
 	} else {

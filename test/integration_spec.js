@@ -6,13 +6,17 @@
 var resred = require("../resred"),
 	resourceful = require("resourceful"),
 	redis = require("redis"),
-	connection = redis.createClient();
+	connection = new resred.Resred({
+		uri: "localhost:6379"
+	}).connection;
 
 connection.flushdb();
 
 describe("resred", function(){
 
 	describe("redis connection", function(){
+
+		var tmpcon;
 
 		it("should connect from connection string", function(){
 			var Test1 = resourceful.define("test1", function(){
@@ -22,6 +26,7 @@ describe("resred", function(){
 			});
 
 			expect(typeof Test1.engine).toEqual("function");
+			tmpcon = Test1.engine.connection;
 		});
 
 		it("should use an existing connection", function(){
@@ -32,6 +37,16 @@ describe("resred", function(){
 			});
 
 			expect(typeof Test2.engine).toEqual("function");
+		});
+
+		it("should resuse connection if same connection string", function(){
+			var Test3 = resourceful.define("test3", function(){
+				this.use("resred", {
+					uri: "localhost:6379"
+				});
+			});
+
+			expect(tmpcon).toEqual(Test3.engine.connection);
 		});
 
 	});
