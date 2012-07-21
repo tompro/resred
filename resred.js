@@ -2,13 +2,22 @@ var redis = require("redis"),
 	url = require("url"),
 	resourceful = require("resourceful");
 
+
+/**
+ * Resred engine constructor
+ * @param {Object} options
+ */
 var Resred = exports.Resred = function(options) {
 	
 	options = options || {};
 	this.uri = options.uri;
-	this.prefix = options.prefix || "";
+	
+	this.keyOptions = {
+		prefix: options.prefix || "",
+		defaultNs: options.namespace || "default"
+	}
+
 	this.index = options.index || {};
-	this.defaultNs = options.namespace || "default";
 
 	if(options.key) {
 		this.key = options.key;
@@ -39,24 +48,15 @@ var Resred = exports.Resred = function(options) {
 
 };
 
-Resred.prototype.protocol = 'redis';
-
-/**
- * Load is not implemented
- */
-Resred.prototype.load = function (data) {
-	throw new(Error)("Load not valid for resred engine.");
-};
-
 /**
  * Creates key structure for a given namespaced key to be used by redis
  * 
- * @param  {string} key
+ * @param  {String} key
+ * @param  {Object} options The keyOptions defined via constructor options
  * @return {object}
  */
-Resred.prototype.buildKey = function(key) {
+var buildKey = exports.buildKey = function(key, options) {
 	var parts, result = {}, id, ns;
-	
 	if(typeof key === "string") {
 		 parts = key.split('/');
 	} else {
@@ -68,11 +68,11 @@ Resred.prototype.buildKey = function(key) {
 		ns = parts.pop();
 	} else {
 		id = key;
-		ns = this.defaultNs;
+		ns = options.defaultNs;
 	}
 
-	if(this.prefix) {
-		ns = this.prefix + ':' + ns;
+	if(options.prefix) {
+		ns = options.prefix + '/' + ns;
 	}
 
 	return {
@@ -80,6 +80,15 @@ Resred.prototype.buildKey = function(key) {
 		"ns": ns
 	};
 }
+
+Resred.prototype.protocol = 'redis';
+
+/**
+ * Load is not implemented
+ */
+Resred.prototype.load = function (data) {
+	throw new(Error)("Load not valid for resred engine.");
+};
 
 /**
  * Returns a redis entry by key. Uses the resourceful
@@ -92,7 +101,7 @@ Resred.prototype.buildKey = function(key) {
  */
 Resred.prototype.get = function(key, cb) {
 	var self = this,
-		id = self.buildKey(key),
+		id = buildKey(key, self.keyOptions),
 		doc;
 
 	self.connection.hget(id["ns"], id["id"], function(err, val){
@@ -118,7 +127,7 @@ Resred.prototype.get = function(key, cb) {
  * @param  {Function} cb  Is called on finish or error
  */
 Resred.prototype.save = function(key, val, cb) {
-	var self = this, id = self.buildKey(key);
+	var self = this, id = buildKey(key, self.keyOptions);
 	self.connection.hset(id["ns"], id["id"], JSON.stringify(val), function(err, res) {
 		if(err) {
 			return cb({status: 500});
@@ -136,7 +145,7 @@ Resred.prototype.save = function(key, val, cb) {
  * @param  {Function} cb  Is called on finish or error
  */
 Resred.prototype.put = function(key, val, cb) {
-	var self = this, id = self.buildKey(key);
+	var self = this, id = buildKey(key, self.keyOptions);
 	self.connection.hexists(id["ns"], id["id"], function(err, res) {
 		if(err) {
 			return cb({status: 500});
@@ -162,7 +171,7 @@ Resred.prototype.update = Resred.prototype.put;
  * @param  {Function} cb  Is called on finish or error
  */
 Resred.prototype.post = function(key, val, cb) {
-	var self = this, id = self.buildKey(key);
+	var self = this, id = buildKey(key, self.keyOptions);
 	self.connection.hexists(id["ns"], id["id"], function(err, res) {
 		if(err) {
 			return cb({status: 500});
@@ -185,7 +194,7 @@ Resred.prototype.create = Resred.prototype.post;
  * @param  {Function} cb  Is called on finish or error
  */
 Resred.prototype.destroy = function(key, cb) {
-	var self = this, id = self.buildKey(key);
+	var self = this, id = buildKey(key, self.keyOptions);
 	self.connection.hdel(id["ns"], id["id"], function(err, res){
 		if(err) {
 			return cb({status: 500});
@@ -199,6 +208,3 @@ Resred.prototype.delete = Resred.prototype.destroy;
 
 //register engine with resourceful
 resourceful.engines.Resred = Resred;
-
-//export resourceful
-module.exports = resourceful;

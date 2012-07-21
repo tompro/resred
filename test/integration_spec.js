@@ -44,9 +44,15 @@ describe("resred", function(){
 			});
 
 			this.string("id");
-			this.string("uniquename");
-			this.string("indexedname");
-			this.number("sorted");
+			this.string("uniquename", {
+				redis: ["unique"]
+			});
+			this.string("indexedname", {
+				redis: ["index"]
+			});
+			this.number("sorted", {
+				redis: ["sort"]
+			});
 		});
 
 		var data = {
@@ -56,10 +62,12 @@ describe("resred", function(){
 		}
 
 		var item = new Model(data);
+		console.log(item.schema);
 
 		it("should save a value in the correct place", function(){
 			item.save(function(err, res) {
 				expect(res.uniquename).toEqual(data.uniquename);
+				expect(res.id).toEqual(item.id);
 			});
 			waits(100);
 		});

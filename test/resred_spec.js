@@ -1,6 +1,6 @@
 var resred = require("../resred"),
 	resourceful = require("resourceful"),
-	Resred = resred.engines.Resred,
+	Resred = resred.Resred,
 	sinon = require("sinon");
 
 var connection = { hset: function(){}, hget: function() {} };
@@ -10,7 +10,7 @@ describe("resred", function(){
 	describe("instantiation", function(){
 
 		it("should be registered as resourcful engine", function(){
-			expect(typeof resred.engines.Resred).toEqual("function");
+			expect(typeof resourceful.engines.Resred).toEqual("function");
 		});
 
 		it("should be an object", function(){
@@ -34,28 +34,28 @@ describe("resred", function(){
 		describe("buildKey()", function(){
 
 			it("should return a hash object", function(){
-				expect(typeof engine.buildKey("")).toEqual("object");
+				expect(typeof resred.buildKey("", engine.keyOptions)).toEqual("object");
 			});
 
 			it("should return id field", function(){
-				expect(engine.buildKey("1").id).toBeTruthy();
+				expect(resred.buildKey("1", engine.keyOptions).id).toBeTruthy();
 			});
 
 			it("should return a namespace field", function(){
-				expect(engine.buildKey("ns/1").ns).toBeTruthy();
+				expect(resred.buildKey("ns/1", engine.keyOptions).ns).toBeTruthy();
 			});
 
 			it("should return correctly separated id", function(){
-				expect(engine.buildKey("ns/1").id).toEqual("1");
+				expect(resred.buildKey("ns/1", engine.keyOptions).id).toEqual("1");
 			});
 
 			it("should return correctly separated ns", function(){
-				expect(engine.buildKey("ns/1").ns).toEqual("ns");
+				expect(resred.buildKey("ns/1", engine.keyOptions).ns).toEqual("ns");
 			});
 
 			it("should prefix ns with prefix if set", function(){
-				engine.prefix = "test";
-				expect(engine.buildKey("ns/1").ns).toEqual("test:ns");
+				engine.keyOptions.prefix = "test";
+				expect(resred.buildKey("ns/1", engine.keyOptions).ns).toEqual("test/ns");
 			});
 
 		});
@@ -93,9 +93,9 @@ describe("resred", function(){
 
 			it("should be called with correctly prepared key arguments and prefix", function(){
 				var cb = function(){};
-				engine.prefix = "test";
+				engine.keyOptions.prefix = "test";
 				engine.get("ns/1", cb);
-				expect(connection.hget.calledWith("test:ns", "1")).toBeTruthy();
+				expect(connection.hget.calledWith("test/ns", "1")).toBeTruthy();
 			});
 
 			it("should be called with default ns if non provided", function(){
@@ -148,9 +148,10 @@ describe("resred", function(){
 				var cb = function(){};
 				var data = {asdf: "asdf"};
 
-				engine.prefix = "test";
+				engine.keyOptions.prefix = "test";
 				engine.save("ns/1", data, cb);
-				expect(connection.hset.calledWith("test:ns", "1", JSON.stringify(data))).toBeTruthy();
+				console.log(connection.hset.args);
+				expect(connection.hset.calledWith("test/ns", "1", JSON.stringify(data))).toBeTruthy();
 			});
 
 			it("should be called with default ns if non provided", function(){
