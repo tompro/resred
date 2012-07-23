@@ -77,7 +77,6 @@ describe("resred", function(){
 		}
 
 		var item = new Model(data);
-		console.log(item.schema);
 
 		it("should save a value in the correct place", function(){
 			item.save(function(err, res) {
