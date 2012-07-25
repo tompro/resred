@@ -1,4 +1,5 @@
-var commandBuilder = require("../commandbuilder");
+var expect = require('chai').expect,
+	commandBuilder = require("../commandbuilder");
 
 describe("commandBuilder", function(){
 
@@ -32,57 +33,57 @@ describe("commandBuilder", function(){
 	describe("registerCommand", function(){
 
 		it("should be a function", function() {
-			expect(typeof commandBuilder.registerCommand).toEqual("function");
+			expect(commandBuilder.registerCommand).to.be.a("function");
 		});
 
 		it("should throw if no command object provided", function() {
-			expect(function(){commandBuilder.registerCommand()}).toThrow();
+			expect(function(){commandBuilder.registerCommand()}).to.throw();
 		});
 
 		it("should throw if no command name provided", function() {
-			expect(function(){commandBuilder.registerCommand({})}).toThrow();
+			expect(function(){commandBuilder.registerCommand({})}).to.throw();
 		});
 
 		it("should throw if no object provided", function() {
-			expect(function(){commandBuilder.registerCommand("")}).toThrow();
+			expect(function(){commandBuilder.registerCommand("")}).to.throw();
 		});
 
 		it("should add the command name to its registered commands", function() {
 			commandBuilder.registerCommand({
 				name: "testcommand"
 			});
-			expect(registered.indexOf("testcommand")).toBeGreaterThan(-1);
+			expect(registered.indexOf("testcommand")).to.be.above(-1);
 		});
 
 		it("should register a command only once", function() {
 			var testcommand = {name: "testcommand"}
 			commandBuilder.registerCommand(testcommand);
 			commandBuilder.registerCommand(testcommand);
-			expect(registered.length).toEqual(1);
+			expect(registered.length).to.equal(1);
 		});
 
 		it("should register execute function for create", function() {
 			commandBuilder.registerCommand(sampleCreateCommand);
-			expect(typeof commands.create.execute["samplecreate"]).toEqual("function");
+			expect(commands.create.execute["samplecreate"]).to.be.a("function");
 		});
 
 		it("should register a falsy command for all commands not provided by config", function() {
 			commandBuilder.registerCommand(sampleCreateCommand);
-			expect(commands.update.execute["samplecreate"]).toBeFalsy();
+			expect(commands.update.execute["samplecreate"]).to.not.be.ok;
 		});
 
 		it("should register execute function for all config commands in right place", function() {
 			commandBuilder.registerCommand(sampleCommand);
-			for(type in commands) {
-				for(action in commands[type]) {
-					expect(commands[type][action][sampleCommand.name]).toEqual(sampleCommand[type][action]);
+			for(var type in commands) {
+				for(var action in commands[type]) {
+					expect(commands[type][action][sampleCommand.name]).to.equal(sampleCommand[type][action]);
 				}
 			}
 		});
 	});
 
 	it("should have a commandMap property", function() {
-		expect(typeof commandBuilder.commandMap).toEqual("object");
+		expect(commandBuilder.commandMap).to.be.an("object");
 	});
 	
 

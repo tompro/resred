@@ -8,7 +8,8 @@ var resred = require("../resred"),
 	redis = require("redis"),
 	connection = new resred.Resred({
 		uri: "localhost:6379"
-	}).connection;
+	}).connection,
+	expect = require("chai").expect;
 
 connection.flushdb();
 
@@ -25,7 +26,7 @@ describe("resred", function(){
 				});
 			});
 
-			expect(typeof Test1.engine).toEqual("function");
+			expect(typeof Test1.engine).to.equal("function");
 			tmpcon = Test1.engine.connection;
 		});
 
@@ -36,7 +37,7 @@ describe("resred", function(){
 				});
 			});
 
-			expect(typeof Test2.engine).toEqual("function");
+			expect(typeof Test2.engine).to.equal("function");
 		});
 
 		it("should resuse connection if same connection string", function(){
@@ -46,7 +47,7 @@ describe("resred", function(){
 				});
 			});
 
-			expect(tmpcon).toEqual(Test3.engine.connection);
+			expect(tmpcon).to.equal(Test3.engine.connection);
 		});
 
 	});
@@ -78,19 +79,19 @@ describe("resred", function(){
 
 		var item = new Model(data);
 
-		it("should save a value in the correct place", function(){
+		it("should save a value in the correct place", function(done){
 			item.save(function(err, res) {
-				expect(res.uniquename).toEqual(data.uniquename);
-				expect(res.id).toEqual(item.id);
+				expect(res.uniquename).to.equal(data.uniquename);
+				expect(res.id).to.equal(item.id);
+				done();
 			});
-			waits(100);
 		});
 
-		it("should fetch correct data from redis", function(){
+		it("should fetch correct data from redis", function(done){
 			Model.get(item.id, function(err, res){
-				expect(res.indexedname).toEqual(data.indexedname);
+				expect(res.indexedname).to.equal(data.indexedname);
+				done();
 			});
-			waits(100);
 		});
 
 
@@ -109,15 +110,13 @@ describe("resred", function(){
 		var data = {some: "other"};
 		var item = new Other(data);
 
-		it("should delete hash value at key", function(){
+		it("should delete hash value at key", function(done){
 			item.save(function(err, res) {
 				connection.hexists("other", res.id, function(err, res){
-					expect(res).toEqual(1);
+					expect(res).to.equal(1);
+					done();
 				});
 			});
-
-			waits(100);
-
 
 		});
 

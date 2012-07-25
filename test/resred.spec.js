@@ -1,6 +1,7 @@
 var resred = require("../resred"),
 	resourceful = require("resourceful"),
 	Resred = resred.Resred,
+	expect = require("chai").expect,
 	sinon = require("sinon");
 
 var connection = { hset: function(){}, hget: function() {} };
@@ -10,11 +11,11 @@ describe("resred", function(){
 	describe("instantiation", function(){
 
 		it("should be registered as resourcful engine", function(){
-			expect(typeof resourceful.engines.Resred).toEqual("function");
+			expect(resourceful.engines.Resred).to.be.a("function");
 		});
 
 		it("should be an object", function(){
-			expect(typeof new Resred({})).toEqual("object");
+			expect(new Resred({})).to.be.an("object");
 		});
 
 	});
@@ -28,34 +29,34 @@ describe("resred", function(){
 		});
 
 		it("should throw on load()", function(){
-			expect(function(){ engine.load({}); }).toThrow("Load not valid for resred engine.");
+			expect(function(){ engine.load({}); }).to.throw("Load not valid for resred engine.");
 		});
 
 		describe("buildKey()", function(){
 
 			it("should return a hash object", function(){
-				expect(typeof resred.buildKey("", engine.keyOptions)).toEqual("object");
+				expect(typeof resred.buildKey("", engine.keyOptions)).to.equal("object");
 			});
 
 			it("should return id field", function(){
-				expect(resred.buildKey("1", engine.keyOptions).id).toBeTruthy();
+				expect(resred.buildKey("1", engine.keyOptions).id).to.be.ok;
 			});
 
 			it("should return a namespace field", function(){
-				expect(resred.buildKey("ns/1", engine.keyOptions).ns).toBeTruthy();
+				expect(resred.buildKey("ns/1", engine.keyOptions).ns).to.be.ok;
 			});
 
 			it("should return correctly separated id", function(){
-				expect(resred.buildKey("ns/1", engine.keyOptions).id).toEqual("1");
+				expect(resred.buildKey("ns/1", engine.keyOptions).id).to.equal("1");
 			});
 
 			it("should return correctly separated ns", function(){
-				expect(resred.buildKey("ns/1", engine.keyOptions).ns).toEqual("ns");
+				expect(resred.buildKey("ns/1", engine.keyOptions).ns).to.equal("ns");
 			});
 
 			it("should prefix ns with prefix if set", function(){
 				engine.keyOptions.prefix = "test";
-				expect(resred.buildKey("ns/1", engine.keyOptions).ns).toEqual("test/ns");
+				expect(resred.buildKey("ns/1", engine.keyOptions).ns).to.equal("test/ns");
 			});
 
 		});
@@ -76,32 +77,32 @@ describe("resred", function(){
 
 			it("should call hget on redis connection", function(){
 				engine.get("ns/1", function(){});
-				expect(connection.hget.calledOnce).toBeTruthy();
+				expect(connection.hget.calledOnce).to.be.true;
 			});
 
 			it("should execute callback when done", function(){
 				var callback = sinon.spy();
 				engine.get("ns/1", callback);
-				expect(callback.calledOnce).toBeTruthy();
+				expect(callback.calledOnce).to.be.true;
 			});
 
 			it("should be called with correctly prepared key arguments", function(){
 				var cb = function(){};
 				engine.get("ns/22", cb);
-				expect(connection.hget.calledWith("ns", "22")).toBeTruthy();
+				expect(connection.hget.calledWith("ns", "22")).to.be.true;
 			});
 
 			it("should be called with correctly prepared key arguments and prefix", function(){
 				var cb = function(){};
 				engine.keyOptions.prefix = "test";
 				engine.get("ns/1", cb);
-				expect(connection.hget.calledWith("test/ns", "1")).toBeTruthy();
+				expect(connection.hget.calledWith("test/ns", "1")).to.be.true;
 			});
 
 			it("should be called with default ns if non provided", function(){
 				var cb = function(){};
 				engine.get(1, cb);
-				expect(connection.hget.calledWith("default", 1)).toBeTruthy();
+				expect(connection.hget.calledWith("default", 1)).to.be.true;
 			});
 
 		});
@@ -127,13 +128,13 @@ describe("resred", function(){
 
 			it("should call hset on connection", function(){
 				engine.save("ns/1", {}, function(){});
-				expect(connection.hset.calledOnce).toBeTruthy();
+				expect(connection.hset.calledOnce).to.be.true;
 			});
 
 			it("should execute callback when done", function(){
 				var callback = sinon.spy();
 				engine.save("ns/1", {}, callback);
-				expect(callback.calledOnce).toBeTruthy();
+				expect(callback.calledOnce).to.be.true;
 			});
 
 			it("should be called with correctly prepared key arguments", function(){
@@ -141,7 +142,7 @@ describe("resred", function(){
 				var data = {asdf: "asdf"};
 
 				engine.save("ns/22", data, cb);
-				expect(connection.hset.calledWith("ns", "22", JSON.stringify(data) )).toBeTruthy();
+				expect(connection.hset.calledWith("ns", "22", JSON.stringify(data) )).to.be.true;
 			});
 
 			it("should be called with correctly prepared key arguments and prefix", function(){
@@ -150,8 +151,7 @@ describe("resred", function(){
 
 				engine.keyOptions.prefix = "test";
 				engine.save("ns/1", data, cb);
-				console.log(connection.hset.args);
-				expect(connection.hset.calledWith("test/ns", "1", JSON.stringify(data))).toBeTruthy();
+				expect(connection.hset.calledWith("test/ns", "1", JSON.stringify(data))).to.be.true;
 			});
 
 			it("should be called with default ns if non provided", function(){
@@ -159,7 +159,7 @@ describe("resred", function(){
 				var data = {asdf: "asdf"};
 
 				engine.save(1, data, cb);
-				expect(connection.hset.calledWith("default", 1, JSON.stringify(data))).toBeTruthy();
+				expect(connection.hset.calledWith("default", 1, JSON.stringify(data))).to.be.true;
 			});
 
 		});
@@ -181,13 +181,13 @@ describe("resred", function(){
 
 			it("should invoke hdel of connection", function(){
 				engine.destroy("ns/1", function(){});
-				expect(connection.hdel.calledOnce).toBeTruthy();
+				expect(connection.hdel.calledOnce).to.be.true;
 			});
 
 			it("should invoke callback when ready", function(){
 				var callback = sinon.spy();
 				engine.destroy("ns/1", callback);
-				expect(callback.calledOnce).toBeTruthy();
+				expect(callback.calledOnce).to.be.true;
 			});
 
 		});
@@ -217,14 +217,14 @@ describe("resred", function(){
 			it("should give 500 on error", function() {
 				sinon.stub(connection, 'hexists', function(ns, id, cb){ cb(true); });
 				engine.put("ns/1", {}, function(res){
-					expect(res.status).toEqual(500);
+					expect(res.status).to.equal(500);
 				});
 			});
 
 			it("should give 409 conflict when doc already exists", function(){
 				sinon.stub(connection, 'hexists', function(ns, id, cb){ cb(null, 1); });
 				engine.put("ns/1", {}, function(res){
-					expect(res.status).toEqual(409);
+					expect(res.status).to.equal(409);
 				});
 			});
 
@@ -232,7 +232,7 @@ describe("resred", function(){
 				sinon.stub(connection, 'hexists', function(ns, id, cb){ cb(null, 0); });
 				sinon.stub(engine, "save");
 				engine.put("ns/1", {}, function(res){
-					expect(engine.save.calledOnce).toBeTruthy();
+					expect(engine.save.calledOnce).to.be.true;
 					engine.save.restore();
 				});
 			});
@@ -264,14 +264,14 @@ describe("resred", function(){
 			it("should give 500 on error", function() {
 				sinon.stub(connection, 'hexists', function(ns, id, cb){ cb(true); });
 				engine.post("ns/1", {}, function(res){
-					expect(res.status).toEqual(500);
+					expect(res.status).to.equal(500);
 				});
 			});
 
 			it("should give 404 not found when doc does not exists", function(){
 				sinon.stub(connection, 'hexists', function(ns, id, cb){ cb(null, 0); });
 				engine.post("ns/1", {}, function(res){
-					expect(res.status).toEqual(404);
+					expect(res.status).to.equal(404);
 				});
 			});
 
@@ -279,7 +279,7 @@ describe("resred", function(){
 				sinon.stub(connection, 'hexists', function(ns, id, cb){ cb(null, 1); });
 				sinon.stub(engine, "save");
 				engine.post("ns/1", {}, function(res){
-					expect(engine.save.calledOnce).toBeTruthy();
+					expect(engine.save.calledOnce).to.be.true;
 					engine.save.restore();
 				});
 			});
@@ -290,15 +290,15 @@ describe("resred", function(){
 			var engine = new Resred({});
 
 			it("should have a delete method that points to destroy", function(){
-				expect(engine.delete).toEqual(engine.destroy);
+				expect(engine.delete).to.equal(engine.destroy);
 			});
 
 			it("should have a create method that points to post", function(){
-				expect(engine.create).toEqual(engine.post);
+				expect(engine.create).to.equal(engine.post);
 			});
 
 			it("should have a update method that points to put", function(){
-				expect(engine.update).toEqual(engine.put);
+				expect(engine.update).to.equal(engine.put);
 			});
 		});
 

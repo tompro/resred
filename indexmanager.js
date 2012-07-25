@@ -1,4 +1,4 @@
-var commandBuilder = require("commandbuilder");
+var commandBuilder = require("./commandbuilder");
 
 var validIndexes = {
 	"unique": [],
