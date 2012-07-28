@@ -19,6 +19,21 @@ module.exports.registerCommand = function(command) {
 	}
 }
 
+/**
+ * Returns the command builder function for a givent type/index combination
+ * 
+ * @param  {String} type
+ * @param  {String} indexName
+ * @return {Function | boolean}
+ */
+var getCommand = module.exports.getCommand = function(type, indexName, commandType) {
+	commandType = commandType || "execute";
+	if(commandMap[type] && commandMap[type][commandType][indexName]) {
+		return commandMap[type][commandType][indexName];
+	}
+	return false;
+}
+
 var registeredCommands = module.exports.registeredCommands = [];
 
 var commandMap = module.exports.commandMap = {
@@ -37,10 +52,6 @@ var commandMap = module.exports.commandMap = {
 		rollback: {},
 		validate: {}
 	}
-}
-
-function getCommand(type, indexName, convertFunction) {
-	return commandMap[type][indexName]["execute"];
 }
 
 function getRollbackCommand(type, indexName, convertFunction) {
