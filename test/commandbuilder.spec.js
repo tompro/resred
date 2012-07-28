@@ -82,6 +82,29 @@ describe("commandBuilder", function(){
 		});
 	});
 
+	describe("getCommand()", function() {
+
+		it("should have a getCommand function", function(){
+			expect(commandBuilder.getCommand).to.be.a("function");
+		});
+
+		it("should return false for a non existing type", function() {
+			expect(commandBuilder.getCommand()).to.not.be.ok;
+		});
+
+		it("should return false for a non existing type", function() {
+			expect(commandBuilder.getCommand()).to.not.be.ok;
+		});
+
+		it("should return false for a non existing indexName", function() {
+			expect(commandBuilder.getCommand("create")).to.not.be.ok;
+		});
+
+		it("should return a function for an existing type and indexName", function() {
+			expect(commandBuilder.getCommand("create", "sample")).to.be.a("function");
+		});
+	});
+
 	it("should have a commandMap property", function() {
 		expect(commandBuilder.commandMap).to.be.an("object");
 	});
