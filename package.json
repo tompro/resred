@@ -13,7 +13,7 @@
   "dependencies": {
     "redis": "0.7.2",
     "hiredis": "0.1.14",
-    "resourceful": "git@github.com:tompro/resourceful.git#master"
+    "resourceful": "git://github.com/tompro/resourceful.git#master"
   },
   "devDependencies": {
     "sinon": "*",
