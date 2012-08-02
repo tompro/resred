@@ -11,17 +11,17 @@ describe("commandBuilder", function(){
 		create: {
 			execute: function(a) {a+6},
 			rollback: function(b) {b+5},
-			validate: function(g) {g+7}
+			after: function(g) {g+7}
 		},
 		update: {
 			execute: function(c) {c+4},
 			rollback: function(d) {d+3},
-			validate: function(h) {h+8}
+			after: function(h) {h+8}
 		},
 		remove: {
 			execute: function(e) {e+2},
 			rollback: function(f) {f+1},
-			validate: function(i) {i+9}
+			after: function(i) {i+9}
 		}
 	}
 
@@ -56,10 +56,10 @@ describe("commandBuilder", function(){
 		});
 
 		it("should register a command only once", function() {
-			var testcommand = {name: "testcommand"}
+			var testcommand = {name: "testcommand"}, len = registered.length;
 			commandBuilder.registerCommand(testcommand);
 			commandBuilder.registerCommand(testcommand);
-			expect(registered.length).to.equal(1);
+			expect(registered.length).to.equal(len);
 		});
 
 		it("should register execute function for create", function() {

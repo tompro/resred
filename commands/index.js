@@ -1,47 +1,81 @@
-function createIndex(multi, key, docId, newDoc, oldDoc, o) {
-	return multi.sadd(buildIndexKey(key, o.propName, o.propValue), docId);
+var commandBuilder = require("../commandbuilder"),
+	crypto = require('crypto'),
+	command;
+
+function createIndex(multi, key, docId, newVal, oldVal, name, type, convert) {
+	var valueKey = buildValueKey(newVal, type);
+	if(Array.isArray(valueKey)) {
+		for(var i=0; i<valueKey.length; i++) {
+			multi.sadd(buildIndexKey(key, name, valueKey[i]), docId);
+		}
+		return multi;
+	}
+
+	return multi.sadd(buildIndexKey(key, name, valueKey), docId);
 }
 
-function removeIndex(multi, key, docId, newDoc, oldDoc, o) {
-	return multi.srem(buildIndexKey(key, o.propName, o.propValue), docId);
+function removeIndex(multi, key, docId, newVal, oldVal, name, type, convert) {
+	var valueKey = buildValueKey(newVal, type);
+	if(Array.isArray(valueKey)) {
+		for(var i=0; i<valueKey.length; i++) {
+			multi.srem(buildIndexKey(key, name, valueKey[i]), docId);
+		}
+		return multi;
+	}
+
+	return multi.srem(buildIndexKey(key, name, valueKey), docId);
 }
 
-function updateIndex(multi, key, docId, newDoc, oldDoc, o) {
-	createIndex(multi, key, docId, newDoc, oldDoc, o);
-	removeIndex(multi, key, docId, newDoc, oldDoc, o);
+function updateIndex(multi, key, docId, newVal, oldVal, name, type, convert) {
+	createIndex(multi, key, docId, newVal, oldVal, name, type, convert);
+	removeIndex(multi, key, docId, newVal, oldVal, name, type, convert);
 }
 
-function rollbackIndexUpdate(multi, key, docId, newDoc, oldDoc, o) {
-	createIndex(multi, key, docId, oldDoc, newDoc, o);
-	removeIndex(multi, key, docId, oldDoc, newDoc, o);
+function rollbackIndexUpdate(multi, key, docId, newVal, oldVal, name, type, convert) {
+	createIndex(multi, key, docId, oldVal, newVal, name, type, convert);
+	removeIndex(multi, key, docId, oldVal, newVal, name, type, convert);
 }
 
 function buildIndexKey(key, propName, propValue) {
 	return key + propName + "/" + propValue;
 }
 
-var sampleCommand = {
-		name: "sample",
-		create: {
-			execute: function(a) {a+6},
-			rollback: function(b) {b+5},
-			validate: function(g) {g+7}
-		},
-		update: {
-			execute: function(c) {c+4},
-			rollback: function(d) {d+3},
-			validate: function(h) {h+8}
-		},
-		remove: {
-			execute: function(e) {e+2},
-			rollback: function(f) {f+1},
-			validate: function(i) {i+9}
+function buildValueKey(val, type) {
+	
+	if(type === "array") {
+		var result = [];
+		for(var i=0; i<val.length; i++) {
+			result.push(buildValueKey(val[i]));
 		}
+		return result;
 	}
 
-module.exports = {
+	if(type === "object") {
+		return md5(JSON.stringify(val));
+	}
+
+	return md5(String(val));
+}
+
+function md5(val) {
+	return crypto.createHash('md5').update(val).digest("hex");
+}
+
+command = {
 	name: "index",
 	create: {
-		execute: createIndex
+		execute: createIndex,
+		rollback: removeIndex
+	},
+	update: {
+		execute: updateIndex,
+		rollback: rollbackIndexUpdate
+	},
+	remove: {
+		execute: removeIndex,
+		rollback: createIndex
 	}
 }
+
+commandBuilder.registerCommand(command);
+module.exports = command;

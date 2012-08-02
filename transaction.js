@@ -1,3 +1,5 @@
+var commandBuilder = require("./commandbuilder");
+
 var Transaction = module.exports = function(redisConnection, key, docId, newDoc, oldDoc) {
 	this.commandType = oldDoc ? "update" : "create";
 	if(!newDoc) this.commandType = "delete";
@@ -9,47 +11,80 @@ var Transaction = module.exports = function(redisConnection, key, docId, newDoc,
 	this.oldDoc = oldDoc;
 
 	this.commands = [];
-	this.rollback = [];
+	this.rollbackCommands = [];
 	this.commandArguments = [];
 }
 
 Transaction.prototype.execute = function(callback) {
-	var self = this, i;
+	var self = this, multi = self.getMulti(), i, params;
 	for(i=0; i<self.commands.length; i++) {
-		self.commands[i](self.getMulti(), self.key, self.docId, self.newDoc, self.oldDoc, self.commandArguments[i]);
+		if(typeof self.commands[i] === "function") {
+			params = self.commandArguments[i];
+			self.commands[i](
+				multi, self.key, self.docId, 
+				self.getNewValue(params.propName), 
+				self.getOldValue(params.propName), 
+				params.propName,
+				params.propType,
+				params.convert
+			);
+		}
 	}
 
 	self.getMulti().exec(function(err, res) {
-		console.log(res);
+		callback(err, res);
 	});
 }
 
 Transaction.prototype.rollback = function(callback) {
-	var self = this, i;
-	for(i=0; i<self.rollback.length; i++) {
-		self.rollback[i](self.getRollbackMulti(), self.key, self.docId, self.newDoc, self.oldDoc, self.commandArguments[i]);
+	var self = this, multi = self.getRollbackMulti(), i;
+	for(i=0; i<self.rollbackCommands.length; i++) {
+		if(typeof self.rollbackCommands[i] === "function") {
+			params = self.commandArguments[i];
+			self.rollbackCommands[i](
+				multi, self.key, self.docId,
+				self.getNewValue(params.propName),
+				self.getOldValue(params.propName),
+				params.propName,
+				params.propType,
+				params.convert
+			);
+		}
 	}
 
-	self.getRollbackMulti().exec(function(err, res){
-		console.log(res);
+	multi.exec(function(err, res){
+		callback(err, res);
 	});
+}
+
+Transaction.prototype.getNewValue = function(name) {
+	if(this.newDoc) {
+		return this.newDoc[name];
+	}
+}
+
+Transaction.prototype.getOldValue = function(name) {
+	if(this.oldDoc) {
+		return this.oldDoc[name];
+	}
 }
 
 Transaction.prototype.retry = function(callback) {
 	var self = this;
 	self.getMulti().exec(function(err, res){
-		console.log(res);
+		callback(err, res);
 	});
 }
 
-Transaction.prototype.addAction = function(propName, indexType, convertFunction) {
+Transaction.prototype.addAction = function(propName, propType, indexType, convertFunction) {
 	var self = this;
 	self.commandArguments.push({
 		propName: propName,
+		propType: propType,
 		convert: convertFunction
 	});
-	self.commands.push(getCommand(this.commandType, indexType, convertFunction));
-	self.rollback.push(getRollbackCommand(this.commandType, indexType, convertFunction));
+	self.commands.push(commandBuilder.getCommand(this.commandType, indexType, "execute"));
+	self.rollbackCommands.push(commandBuilder.getCommand(this.commandType, indexType, "rollback"));
 }
 
 Transaction.prototype.getMulti = function() {
