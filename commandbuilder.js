@@ -14,7 +14,7 @@ module.exports.registerCommand = function(command) {
 		for(var type in commandMap) {
 			commandMap[type].execute[command.name] = (command[type] ? command[type].execute : false);
 			commandMap[type].rollback[command.name] = (command[type] ? command[type].rollback : false);
-			commandMap[type].validate[command.name] = (command[type] ? command[type].validate : false);
+			commandMap[type].after[command.name] = (command[type] ? command[type].after : false);
 		}
 	}
 }
@@ -34,27 +34,35 @@ var getCommand = module.exports.getCommand = function(type, indexName, commandTy
 	return false;
 }
 
+module.exports.executeTransaction = function() {
+
+}
+
+/**
+ * Holds the names of already registered commands
+ * @type {array}
+ */
 var registeredCommands = module.exports.registeredCommands = [];
 
+/**
+ * Holds command functions for all registered commands
+ * @type {object}
+ */
 var commandMap = module.exports.commandMap = {
 	create: {
 		execute: {},
 		rollback: {},
-		validate: {}
+		after: {}
 	},
 	update: {
 		execute: {},
 		rollback: {},
-		validate: {}
+		after: {}
 	},
 	remove: {
 		execute: {},
 		rollback: {},
-		validate: {}
+		after: {}
 	}
-}
-
-function getRollbackCommand(type, indexName, convertFunction) {
-	return commandMap[type][indexName]["rollback"];
 }
 

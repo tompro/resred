@@ -1,5 +1,13 @@
 var commandBuilder = require("./commandbuilder");
 
+var resTypesMap = [
+	"string",
+	"boolean",
+	"number",
+	"array",
+	"object"
+];
+
 var validIndexes = {
 	"unique": [],
 	"index": [],
@@ -21,51 +29,6 @@ var IndexManager = module.exports = function(options) {
 		this.setupSchema(options.schema);
 		this.updateIndexes();
 	}
-}
-
-IndexManager.prototype.processDocValues = function(key, doc, cb) {
-
-	client.hget(key.ns, key.id, function(err, data){
-		// now for all doc props with index check if changed
-	});
-
-}
-
-IndexManager.prototype.runUpdateTransaction = function(key, doc, cb) {
-	// key{ns:ns, id:id}
-	
-	for (name in doc) {
-		
-	}
-
-	/*
-	self.connection.hset(id["ns"], id["id"], JSON.stringify(val), function(err, res) {
-		if(err) {
-			return cb({status: 500});
-		}
-		self.get(key, cb);
-	});
-	 */
-
-}
-
-IndexManager.prototype.runCreateTransaction = function(key, doc, cb) {
-	var self = this, indexes = {}, multi = connection.multi();
-	for(name in doc) {
-		if(self.indexMap[name]) {
-			for(index in self.indexMap[name]) {
-				self.appendIndexCommand(multi);
-			}
-		}
-	}
-}
-
-IndexManager.prototype.appendIndexCreateCommand = function(multi, indexName, propName, propValue) {
-
-
-
-	//redis.hget("prefix/ns/prop1/unique", "asdf");
-	//redis.hsetnx("prefix/ns/propName/unique", propValue, docid);
 }
 
 IndexManager.prototype.updateIndexes = function() {
