@@ -60,21 +60,20 @@ describe("index commands", function() {
 				var key = crypto.createHash('md5').update("asdf").digest("hex");
 
 				trans.execute(function(err, res) {
-
+					
 					connection.smembers("mytype/first/" + key, function(err, res) {
-
 						expect(res[0]).to.equal("myid");
+						
 						trans.rollback(function(err, res) {
-
 							expect(res[0]).to.equal(1);
+
 							connection.smembers("mytype/first/" + key, function(err, res) {
-
 								expect(res.length).to.equal(0);
+								
 								trans.retry(function(err, res) {
-
 									expect(err).not.to.be.ok;
-									connection.smembers("mytype/first/" + key, function(err, res) {
-										
+									
+									connection.smembers("mytype/first/" + key, function(err, res) {	
 										expect(res[0]).to.equal("myid");
 										done();
 									});
@@ -88,7 +87,9 @@ describe("index commands", function() {
 			it("should create correct index for int number", function(done) {
 				trans.addAction("second", "number", "index");
 				var key = crypto.createHash('md5').update(String(22)).digest("hex");
+				
 				trans.execute(function(err, res) {
+					
 					connection.smembers("mytype/second/" + key, function(err, res) {
 						expect(res[0]).to.equal("myid");
 						done();
