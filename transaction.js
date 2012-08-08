@@ -1,9 +1,8 @@
-var commandBuilder = require("./commandbuilder");
+var commandBuilder = require("./commandbuilder"),
+	crypto = require('crypto');
 
-var Transaction = module.exports = function(redisConnection, key, docId, newDoc, oldDoc) {
-	this.commandType = oldDoc ? "update" : "create";
-	if(!newDoc) this.commandType = "delete";
-
+var Transaction = module.exports = function(redisConnection, commandType, key, docId, newDoc, oldDoc) {
+	this.commandType = commandType;
 	this.connection = redisConnection;
 	this.key = key;
 	this.docId = docId;
@@ -22,9 +21,7 @@ Transaction.prototype.execute = function(callback) {
 			params = self.commandArguments[i];
 			self.commands[i].call(
 				self,
-				multi, self.key, self.docId, 
-				self.getNewValue(params.propName), 
-				self.getOldValue(params.propName), 
+				multi,
 				params.propName,
 				params.propType,
 				params.convert
@@ -42,10 +39,9 @@ Transaction.prototype.rollback = function(callback) {
 	for(i=0; i<self.rollbackCommands.length; i++) {
 		if(typeof self.rollbackCommands[i] === "function") {
 			params = self.commandArguments[i];
-			self.rollbackCommands[i](
-				multi, self.key, self.docId,
-				self.getNewValue(params.propName),
-				self.getOldValue(params.propName),
+			self.rollbackCommands[i].call(
+				self,
+				multi,
 				params.propName,
 				params.propType,
 				params.convert
@@ -96,4 +92,8 @@ Transaction.prototype.getMulti = function() {
 Transaction.prototype.getRollbackMulti = function() {
 	if(!this.rollbackMulti) this.rollbackMulti = this.connection.multi();
 	return this.rollbackMulti;
+}
+
+Transaction.prototype.hash = function(val) {
+	return crypto.createHash('md5').update(val).digest("hex");
 }

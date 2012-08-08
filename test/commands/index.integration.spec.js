@@ -40,7 +40,7 @@ describe("index commands", function() {
 		var create = index.create;
 		var trans;
 		beforeEach(function() {
-			trans = new Transaction(connection, "mytype/", "myid", {
+			trans = new Transaction(connection, "create", "mytype/", "myid", {
 				"first": "asdf",
 				"second": 22,
 				"third": .12,
@@ -53,7 +53,7 @@ describe("index commands", function() {
 			expect(create.execute).to.be.a("function");
 		});
 
-		describe("execute, rollback and retry", function() {
+		describe("execute", function() {
 
 			it("should create correct index for string", function(done) {
 				trans.addAction("first", "string", "index");
@@ -64,40 +64,6 @@ describe("index commands", function() {
 						expect(res[0]).to.equal("myid");
 						done();
 					});
-				});
-			});
-
-			it("should remove an index via rollback command", function(done) {
-				trans.addAction("first", "string", "index");
-				var key = crypto.createHash('md5').update("asdf").digest("hex");
-
-				trans.execute(function(err, res) {
-					trans.rollback(function(err, res) {
-						expect(res[0]).to.equal(1);
-						connection.smembers("mytype/first/" + key, function(err, res) {
-							expect(res.length).to.equal(0);
-							done();
-						});
-					});
-				});
-			});
-
-			it("should recreate an index via retry command", function(done) {
-				trans.addAction("first", "string", "index");
-				var key = crypto.createHash('md5').update("asdf").digest("hex");
-
-				trans.execute(function(err, res) {
-					
-					connection.flushdb(function(err, res) {
-						trans.retry(function(err, res) {
-							expect(err).not.to.be.ok;
-							connection.smembers("mytype/first/" + key, function(err, res) {	
-								expect(res[0]).to.equal("myid");
-								done();
-							});
-						})
-					});
-
 				});
 			});
 
@@ -126,7 +92,7 @@ describe("index commands", function() {
 				});
 			});
 
-			it("should create, remove and retry multiple indexes for array", function(done) {
+			it("should create, multiple indexes for array", function(done) {
 				trans.addAction("forth", "array", "index");
 				var key = crypto.createHash('md5').update("qwer").digest("hex");
 				var key2 = crypto.createHash('md5').update("tzui").digest("hex");
@@ -135,19 +101,39 @@ describe("index commands", function() {
 						expect(res[0]).to.equal("myid");
 						connection.smembers("mytype/forth/" + key2, function(err, res) {
 							expect(res[0]).to.equal("myid");
-
-							trans.rollback(function(err, res) {
-								expect(res).to.eql([1,1]);
-
-								trans.retry(function(err, res) {
-									expect(res).to.eql([1,1]);
-									done();
-								});
-								
-							});
-
-							
+							done();
 						});	
+					});
+				});
+			});
+
+			it("should create correct single index for object", function(done) {
+				trans.addAction("fifth", "object", "index");
+				var key = crypto.createHash('md5').update(JSON.stringify({"asdf":"qwer"})).digest("hex");
+
+				trans.execute(function(err, res) {
+					connection.smembers("mytype/fifth/" + key, function(err, res) {
+						expect(res[0]).to.equal("myid");
+						done();
+					});
+				});
+			});
+
+		});
+
+		describe("rollback", function() {
+
+			it("should remove a string index", function(done) {
+				trans.addAction("first", "string", "index");
+				var key = crypto.createHash('md5').update("asdf").digest("hex");
+
+				trans.execute(function(err, res) {
+					trans.rollback(function(err, res) {
+						expect(res[0]).to.equal(1);
+						connection.smembers("mytype/first/" + key, function(err, res) {
+							expect(res.length).to.equal(0);
+							done();
+						});
 					});
 				});
 			});
@@ -171,6 +157,27 @@ describe("index commands", function() {
 
 			});
 
+		});
+
+		describe("retry", function() {
+
+			it("should recreate a string index", function(done) {
+				trans.addAction("first", "string", "index");
+				var key = crypto.createHash('md5').update("asdf").digest("hex");
+
+				trans.execute(function(err, res) {
+					connection.flushdb(function(err, res) {
+						trans.retry(function(err, res) {
+							expect(err).not.to.be.ok;
+							connection.smembers("mytype/first/" + key, function(err, res) {	
+								expect(res[0]).to.equal("myid");
+								done();
+							});
+						})
+					});
+				});
+			});
+
 			it("should recreate multiple indexes on retry command", function(done) {
 				trans.addAction("forth", "array", "index");
 				var key = crypto.createHash('md5').update("qwer").digest("hex");
@@ -178,9 +185,7 @@ describe("index commands", function() {
 
 				trans.execute(function(err, res) {
 					connection.flushdb(function(err, res) {
-						
 						trans.retry(function(err, res) {
-
 							connection.smembers("mytype/forth/" + key, function(err, res) {
 								expect(res[0]).to.equal("myid");
 								connection.smembers("mytype/forth/" + key2, function(err, res) {
@@ -188,22 +193,104 @@ describe("index commands", function() {
 									done();
 								});
 							});
-
 						});
-
 					});
-
 				});
+			});
+		});
 
+	});
+
+	describe("remove", function() {
+
+		var remove = index.remove;
+		var trans;
+		var data = {
+			"first": "asdf",
+			"second": 22,
+			"third": .12,
+			"forth": ["qwer", "tzui"],
+			"fifth": {"asdf":"qwer"}
+		};
+
+		beforeEach(function(done) {
+			var prepareTrans = new Transaction(connection, "create", "mytype/", "myid", data);
+
+			prepareTrans.addAction("first", "string", "index");
+			prepareTrans.addAction("second", "number", "index");
+			prepareTrans.addAction("third", "number", "index");
+			prepareTrans.addAction("forth", "array", "index");
+			prepareTrans.addAction("fifth", "object", "index");
+
+			prepareTrans.execute(function(err, res) {
+				done();
 			});
 
-			it("should create correct single index for object", function(done) {
+			trans = new Transaction(connection, "remove", "mytype/", "myid", null, data);
+		});
+
+		it("should have an execute function", function() {
+			expect(remove.execute).to.be.a("function");
+		});
+
+		describe("execute", function() {
+
+			it("shold remove a string index", function(done) {
+				var key = crypto.createHash('md5').update("asdf").digest("hex");
+				trans.addAction("first", "string", "index");
+				trans.execute(function(err, res) {
+					connection.smembers("mytype/first/" + key, function(err, res) {
+						expect(res.length).to.equal(0);
+						done();
+					});
+				});
+			});
+
+			it("shold remove a number index", function(done) {
+				var key = crypto.createHash('md5').update(String(22)).digest("hex");
+				trans.addAction("second", "number", "index");
+				trans.execute(function(err, res) {
+					connection.smembers("mytype/second/" + key, function(err, res) {
+						expect(res.length).to.equal(0);
+						done();
+					});
+				});
+			});
+
+			it("shold remove a float index", function(done) {
+				var key = crypto.createHash('md5').update(String(.12)).digest("hex");
+				trans.addAction("third", "number", "index");
+				trans.execute(function(err, res) {
+					connection.smembers("mytype/third/" + key, function(err, res) {
+						expect(res.length).to.equal(0);
+						done();
+					});
+				});
+			});
+
+			it("shold remove multiple array indexes", function(done) {
+				var key = crypto.createHash('md5').update("qwer").digest("hex");
+				var key2 = crypto.createHash('md5').update("tzui").digest("hex");
+
+				trans.addAction("forth", "array", "index");
+				trans.execute(function(err, res) {
+					connection.smembers("mytype/forth/" + key, function(err, res) {
+						expect(res.length).to.equal(0);
+						connection.smembers("mytype/forth/" + key2, function(err, res) {
+							expect(res.length).to.equal(0);
+							done();
+						});
+					});
+				});
+			});
+
+			it("shold remove an object index", function(done) {
 				trans.addAction("fifth", "object", "index");
 				var key = crypto.createHash('md5').update(JSON.stringify({"asdf":"qwer"})).digest("hex");
 
 				trans.execute(function(err, res) {
 					connection.smembers("mytype/fifth/" + key, function(err, res) {
-						expect(res[0]).to.equal("myid");
+						expect(res.length).to.equal(0);
 						done();
 					});
 				});
@@ -211,6 +298,41 @@ describe("index commands", function() {
 
 		});
 
+		describe("rollback", function() {
+
+			it("shold restore a previous string index", function(done) {
+				var key = crypto.createHash('md5').update("asdf").digest("hex");
+				trans.addAction("first", "string", "index");
+				trans.execute(function(err, res) {
+					trans.rollback(function(err, res) {
+						expect(res).to.have.length(1);
+						connection.smembers("mytype/first/" + key, function(err, res) {
+							expect(res[0]).to.equal("myid");
+							done();
+						});
+					});
+				});
+			});
+
+			it("shold restore multiple previous array indexes", function(done) {
+				var key = crypto.createHash('md5').update("qwer").digest("hex");
+				var key2 = crypto.createHash('md5').update("tzui").digest("hex");
+				trans.addAction("forth", "array", "index");
+				trans.execute(function(err, res) {
+					trans.rollback(function(err, res) {
+						connection.smembers("mytype/forth/" + key, function(err, res) {
+							expect(res[0]).to.equal("myid");
+							connection.smembers("mytype/forth/" + key2, function(err, res) {
+								expect(res[0]).to.equal("myid");
+								done();
+							});
+						});
+					});
+				});
+
+			});
+
+		});
 	});
 
 });
