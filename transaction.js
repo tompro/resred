@@ -16,11 +16,12 @@ var Transaction = module.exports = function(redisConnection, key, docId, newDoc,
 }
 
 Transaction.prototype.execute = function(callback) {
-	var self = this, multi = self.getMulti(), i, params;
+	var params, self = this, multi = self.getMulti(), i;
 	for(i=0; i<self.commands.length; i++) {
 		if(typeof self.commands[i] === "function") {
 			params = self.commandArguments[i];
-			self.commands[i](
+			self.commands[i].call(
+				self,
 				multi, self.key, self.docId, 
 				self.getNewValue(params.propName), 
 				self.getOldValue(params.propName), 
@@ -37,7 +38,7 @@ Transaction.prototype.execute = function(callback) {
 }
 
 Transaction.prototype.rollback = function(callback) {
-	var self = this, multi = self.getRollbackMulti(), i;
+	var params, self = this, multi = self.getRollbackMulti(), i;
 	for(i=0; i<self.rollbackCommands.length; i++) {
 		if(typeof self.rollbackCommands[i] === "function") {
 			params = self.commandArguments[i];

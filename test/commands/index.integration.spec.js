@@ -55,32 +55,49 @@ describe("index commands", function() {
 
 		describe("execute, rollback and retry", function() {
 
-			it("should create remove and reset correct index for string", function(done) {
+			it("should create correct index for string", function(done) {
+				trans.addAction("first", "string", "index");
+				var key = crypto.createHash('md5').update("asdf").digest("hex");
+
+				trans.execute(function(err, res) {
+					connection.smembers("mytype/first/" + key, function(err, res) {
+						expect(res[0]).to.equal("myid");
+						done();
+					});
+				});
+			});
+
+			it("should remove an index via rollback command", function(done) {
+				trans.addAction("first", "string", "index");
+				var key = crypto.createHash('md5').update("asdf").digest("hex");
+
+				trans.execute(function(err, res) {
+					trans.rollback(function(err, res) {
+						expect(res[0]).to.equal(1);
+						connection.smembers("mytype/first/" + key, function(err, res) {
+							expect(res.length).to.equal(0);
+							done();
+						});
+					});
+				});
+			});
+
+			it("should recreate an index via retry command", function(done) {
 				trans.addAction("first", "string", "index");
 				var key = crypto.createHash('md5').update("asdf").digest("hex");
 
 				trans.execute(function(err, res) {
 					
-					connection.smembers("mytype/first/" + key, function(err, res) {
-						expect(res[0]).to.equal("myid");
-						
-						trans.rollback(function(err, res) {
-							expect(res[0]).to.equal(1);
-
-							connection.smembers("mytype/first/" + key, function(err, res) {
-								expect(res.length).to.equal(0);
-								
-								trans.retry(function(err, res) {
-									expect(err).not.to.be.ok;
-									
-									connection.smembers("mytype/first/" + key, function(err, res) {	
-										expect(res[0]).to.equal("myid");
-										done();
-									});
-								});
+					connection.flushdb(function(err, res) {
+						trans.retry(function(err, res) {
+							expect(err).not.to.be.ok;
+							connection.smembers("mytype/first/" + key, function(err, res) {	
+								expect(res[0]).to.equal("myid");
+								done();
 							});
-						});
+						})
 					});
+
 				});
 			});
 
@@ -109,7 +126,7 @@ describe("index commands", function() {
 				});
 			});
 
-			it("should create multiple indexes for array", function(done) {
+			it("should create, remove and retry multiple indexes for array", function(done) {
 				trans.addAction("forth", "array", "index");
 				var key = crypto.createHash('md5').update("qwer").digest("hex");
 				var key2 = crypto.createHash('md5').update("tzui").digest("hex");
@@ -118,10 +135,66 @@ describe("index commands", function() {
 						expect(res[0]).to.equal("myid");
 						connection.smembers("mytype/forth/" + key2, function(err, res) {
 							expect(res[0]).to.equal("myid");
-							done();
+
+							trans.rollback(function(err, res) {
+								expect(res).to.eql([1,1]);
+
+								trans.retry(function(err, res) {
+									expect(res).to.eql([1,1]);
+									done();
+								});
+								
+							});
+
+							
 						});	
 					});
 				});
+			});
+
+			it("should remove multiple indexes for array on rollback", function(done) {
+				trans.addAction("forth", "array", "index");
+				var key = crypto.createHash('md5').update("qwer").digest("hex");
+				var key2 = crypto.createHash('md5').update("tzui").digest("hex");
+
+				trans.execute(function(err, res) {
+					trans.rollback(function(err, res) {
+						expect(res).to.eql([1,1]);
+
+						connection.smembers("mytype/forth/" + key2, function(err, res) {
+							expect(res).to.have.length(0);
+							done();
+						});
+
+					});
+				});
+
+			});
+
+			it("should recreate multiple indexes on retry command", function(done) {
+				trans.addAction("forth", "array", "index");
+				var key = crypto.createHash('md5').update("qwer").digest("hex");
+				var key2 = crypto.createHash('md5').update("tzui").digest("hex");
+
+				trans.execute(function(err, res) {
+					connection.flushdb(function(err, res) {
+						
+						trans.retry(function(err, res) {
+
+							connection.smembers("mytype/forth/" + key, function(err, res) {
+								expect(res[0]).to.equal("myid");
+								connection.smembers("mytype/forth/" + key2, function(err, res) {
+									expect(res[0]).to.equal("myid");
+									done();
+								});
+							});
+
+						});
+
+					});
+
+				});
+
 			});
 
 			it("should create correct single index for object", function(done) {

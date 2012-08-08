@@ -14,6 +14,17 @@ function createIndex(multi, key, docId, newVal, oldVal, name, type, convert) {
 	return multi.sadd(buildIndexKey(key, name, valueKey), docId);
 }
 
+function create(multi, name, type, convert) {
+	var valueKey = buildValueKey(this.getNewValue(name), type);
+	if(Array.isArray(valueKey)) {
+		for(var i=0; i<valueKey.length; i++) {
+			return multi.sadd(buildIndexKey(this.key, name, valueKey[i]), this.docId);
+		}
+		return multi;
+	}
+	return multi.sadd(buildIndexKey(this.key, name, valueKey), this.docId);
+}
+
 function removeIndex(multi, key, docId, newVal, oldVal, name, type, convert) {
 	var valueKey = buildValueKey(newVal, type);
 	if(Array.isArray(valueKey)) {
