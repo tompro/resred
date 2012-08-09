@@ -1,6 +1,8 @@
 resred
 ==========
-
+- - -
+[![Build Status](https://secure.travis-ci.org/[YOUR_GITHUB_USERNAME]/[YOUR_PROJECT_NAME].png)](http://travis-ci.org/tompro/resred)
+- - -
 Resred is a Redis backend for [flatiron/resourceful](https://github.com/flatiron/resourceful), and yes I am aware that there are other Redis backends like [resourceful-redis](https://github.com/particlebanana/resourceful-redis) which by the way gave me a quick start for developing Resred. Resred alredy uses the 3.0 version (especially the new id system) of resourceful. So you have to wait for a while before you can install this via npm.
 
 ### Why another backend?
