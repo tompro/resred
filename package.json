@@ -20,6 +20,9 @@
     "chai": "*",
     "mocha": "*"
   },
+  "scripts": {
+    "test": "mocha test/"
+  },
   "keywords": [
     "flatiron",
     "resourceful",
