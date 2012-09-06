@@ -1,6 +1,7 @@
 var redis = require("redis"),
 	url = require("url"),
-	resourceful = require("resourceful");
+	resourceful = require("resourceful"),
+	Transaction = require("./transaction");
 
 var connections = {};
 
@@ -132,12 +133,26 @@ Resred.prototype.get = function(key, cb) {
  * @param  {Function} cb  Is called on finish or error
  */
 Resred.prototype.save = function(key, val, cb) {
-	var self = this, id = buildKey(key, self.keyOptions);
-	self.connection.hset(id["ns"], id["id"], JSON.stringify(val), function(err, res) {
+	var self = this, 
+		id = buildKey(key, self.keyOptions),
+		type = "create",
+		transaction;
+
+	self.connection.hget(id["ns"], id["id"], function(err, res) {
 		if(err) {
 			return cb({status: 500});
 		}
-		self.get(key, cb);
+		if(res) {
+			type = "update";
+		}
+		
+		transaction = new Transaction(self.connection, type, id["ns"], id["id"], val, res);
+		transaction.execute(function(err, res) {
+			if(err) {
+				return cb({status: 500});
+			}
+			self.get(key, cb);
+		});
 	});
 }
 
