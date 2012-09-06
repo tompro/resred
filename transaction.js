@@ -1,4 +1,5 @@
-var commandBuilder = require("./commandbuilder"),
+var docCommand = require('./commands/document'),
+	commandBuilder = require("./commandbuilder"),
 	crypto = require('crypto');
 
 var Transaction = module.exports = function(redisConnection, commandType, key, docId, newDoc, oldDoc) {
@@ -12,6 +13,9 @@ var Transaction = module.exports = function(redisConnection, commandType, key, d
 	this.commands = [];
 	this.rollbackCommands = [];
 	this.commandArguments = [];
+
+	// add basic document operation commands
+	this.addAction(null, null, "resred-document");
 }
 
 Transaction.prototype.execute = function(callback) {
@@ -29,7 +33,7 @@ Transaction.prototype.execute = function(callback) {
 		}
 	}
 
-	self.getMulti().exec(function(err, res) {
+	multi.exec(function(err, res) {
 		callback(err, res);
 	});
 }

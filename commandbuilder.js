@@ -8,7 +8,6 @@ module.exports.registerCommand = function(command) {
 	if(!command || (typeof command !== "object") || !command.name) {
 		throw new Error("Invalid command configuration provided.");
 	}
-
 	if(registeredCommands.indexOf(command.name) === -1) {
 		registeredCommands.push(command.name);
 		for(var type in commandMap) {

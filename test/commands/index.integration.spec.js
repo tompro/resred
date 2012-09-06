@@ -40,7 +40,7 @@ describe("index commands", function() {
 		var create = index.create;
 		var trans;
 		beforeEach(function() {
-			trans = new Transaction(connection, "create", "mytype/", "myid", {
+			trans = new Transaction(connection, "create", "mytype", "myid", {
 				"first": "asdf",
 				"second": 22,
 				"third": .12,
@@ -145,7 +145,7 @@ describe("index commands", function() {
 
 				trans.execute(function(err, res) {
 					trans.rollback(function(err, res) {
-						expect(res).to.eql([1,1]);
+						expect(res).to.eql([1,1,1]);
 
 						connection.smembers("mytype/forth/" + key2, function(err, res) {
 							expect(res).to.have.length(0);
@@ -214,7 +214,7 @@ describe("index commands", function() {
 		};
 
 		beforeEach(function(done) {
-			var prepareTrans = new Transaction(connection, "create", "mytype/", "myid", data);
+			var prepareTrans = new Transaction(connection, "create", "mytype", "myid", data);
 
 			prepareTrans.addAction("first", "string", "index");
 			prepareTrans.addAction("second", "number", "index");
@@ -226,7 +226,7 @@ describe("index commands", function() {
 				done();
 			});
 
-			trans = new Transaction(connection, "remove", "mytype/", "myid", null, data);
+			trans = new Transaction(connection, "remove", "mytype", "myid", null, data);
 		});
 
 		it("should have an execute function", function() {
@@ -305,7 +305,7 @@ describe("index commands", function() {
 				trans.addAction("first", "string", "index");
 				trans.execute(function(err, res) {
 					trans.rollback(function(err, res) {
-						expect(res).to.have.length(1);
+						expect(res).to.have.length(2);
 						connection.smembers("mytype/first/" + key, function(err, res) {
 							expect(res[0]).to.equal("myid");
 							done();

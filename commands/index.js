@@ -44,7 +44,7 @@ var commandBuilder = require("../commandbuilder"),
 		 * @param  {Function} convert An optional convert function
 		 * @return {RedisMulti}
 		 */
-		execute: function updateIndex(multi, name, type, convert) {
+		execute: function (multi, name, type, convert) {
 			var valueKey = buildValueKey(this.getNewValue(name), type);
 			var oldValueKey = buildValueKey(this.getOldValue(name), type);
 			addMulti.call(this, "sadd", multi, valueKey, name);
@@ -80,7 +80,7 @@ var commandBuilder = require("../commandbuilder"),
 		 * @param  {Function} convert An optional convert function
 		 * @return {RedisMulti}
 		 */
-		execute: function deleteIndex(multi, name, type, convert) {
+		execute: function (multi, name, type, convert) {
 			var valueKey = buildValueKey(this.getOldValue(name), type);
 			return addMulti.call(this, "srem", multi, valueKey, name);
 		},
@@ -93,7 +93,7 @@ var commandBuilder = require("../commandbuilder"),
 		 * @param  {Function} convert An optional convert function
 		 * @return {RedisMulti}
 		 */
-		rollback: function rollbackDeleteIndex(multi, name, type, convert) {
+		rollback: function (multi, name, type, convert) {
 			var valueKey = buildValueKey(this.getOldValue(name), type);
 			return addMulti.call(this, "sadd", multi, valueKey, name);
 		}
@@ -126,7 +126,7 @@ function addMulti(command, multi, valueKey, name) {
  * @return {String}
  */
 function buildIndexKey(key, propName, propValue) {
-	return key + propName + "/" + propValue;
+	return key + "/" + propName + "/" + propValue;
 }
 
 /**
