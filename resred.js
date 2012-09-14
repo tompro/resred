@@ -12,7 +12,7 @@ var connections = {};
 var Resred = exports.Resred = function(options) {
 	
 	options = options || {};
-	this.uri = options.uri;
+	this.uri = options.uri || "localhost:6379";
 	
 	this.keyOptions = {
 		prefix: options.prefix || "",
@@ -121,7 +121,7 @@ Resred.prototype.get = function(key, cb) {
 		}
 
 		doc = JSON.parse(val);
-		doc.status = 201;
+		doc.status = 200;
 		return cb(null, doc);
 	});
 };
@@ -157,8 +157,8 @@ Resred.prototype.save = function(key, val, cb) {
 }
 
 /**
- * Creates a new model in redis. Uses save for creation but returns conflict error
- * if resource already exists.
+ * Updates an existing model in redis. Uses save for creation but returns error
+ * if resource does not exist.
  * 
  * @param  {String}   key A key in resourceful >3.0 format "resource/id"
  * @param  {Object}   val The data to be saved
@@ -172,9 +172,9 @@ Resred.prototype.put = function(key, val, cb) {
 		}
 
 		if(res) {
-			return cb({status: 409});
-		} else {
 			self.save(key, val, cb);
+		} else {
+			return cb({status: 404});
 		}
 	})
 }
@@ -183,7 +183,7 @@ Resred.prototype.put = function(key, val, cb) {
 Resred.prototype.update = Resred.prototype.put;
 
 /**
- * Updates an existing model in redis. Returns an error code if an item of same type
+ * Creates a new model in redis. Returns an error code if an item of same type
  * with given id already exist in redis.
  * 
  * @param  {String}   key key A key in resourceful >3.0 format "resource/id"
@@ -198,9 +198,9 @@ Resred.prototype.post = function(key, val, cb) {
 		}
 
 		if(res) {
-			self.save(key, val, cb);
+			return cb({status: 409})
 		} else {
-			return cb({status: 404});
+			self.save(key, val, cb);
 		}
 	});
 }

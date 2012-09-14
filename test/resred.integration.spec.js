@@ -3,258 +3,196 @@ var resred = require("../resred"),
 	Resred = resred.Resred,
 	expect = require("chai").expect,
 	sinon = require("sinon"),
-	connection = new resred.Resred({
+	engine = new resred.Resred({
 		uri: "localhost:6379"
-	}).connection;
+	}),
+	connection = engine.connection;
 
 describe("resred", function(){
 
-	describe("get()", function() {
+	var TestResource = resourceful.define("testresource", function(){
+		this.use("resred");
 
-		it("should read an existing document from redis", function(done) {
+		this.string("id");
+		this.string("indexedname", {
+			redis: ["index"]
+		});
+	});
+
+	var testDoc = {
+		"id": "myid",
+		"indexedname": "myname"
+	};
+
+	afterEach(function(done) {
+		connection.flushdb(function() {
 			done();
 		});
+	});
 
-		it("should return falsy for non existing document", function(done) {
-			done();
+	describe("get()", function() {
+
+		beforeEach(function(done) {
+			connection.hset("testresource", "myid", JSON.stringify(testDoc), function(err, res) {
+				done();
+			});
+		});
+
+		it("should read an existing document from redis", function(done) {
+			TestResource.get("myid", function(err, res) {
+				expect(err).to.not.be.ok;
+				expect(res).to.be.an('object');
+				expect(res.status).to.equal(200);
+				done();
+			});
+			
+		});
+
+		it("should return 404 err for non existing document", function(done) {
+			TestResource.get("nonid", function(err, res) {
+				expect(err.status).to.equal(404);
+				done();
+			});
 		});
 
 	});
 
-	/*describe("methods", function(){
+	describe("save()", function() {
 
-		var engine;
-		beforeEach(function(){
-			engine = new Resred({});
-		});
-
-		describe("get()", function(){
-			var engine;
-
-			beforeEach(function(){
-				sinon.stub(connection, 'hget', function(ns, id, cb){ cb(); });
-				engine = new Resred({
-					connection: connection
-				});
+		it("should save a new document to redis", function(done) {
+			var myres = new TestResource({
+				"id": "otherid",
+				"indexedname": "othername"
 			});
 
-			afterEach(function(){
-				connection.hget.restore();
-			});
-
-			it("should call hget on redis connection", function(){
-				engine.get("ns/1", function(){});
-				expect(connection.hget.calledOnce).to.be.true;
-			});
-
-			it("should execute callback when done", function(){
-				var callback = sinon.spy();
-				engine.get("ns/1", callback);
-				expect(callback.calledOnce).to.be.true;
-			});
-
-			it("should be called with correctly prepared key arguments", function(){
-				var cb = function(){};
-				engine.get("ns/22", cb);
-				expect(connection.hget.calledWith("ns", "22")).to.be.true;
-			});
-
-			it("should be called with correctly prepared key arguments and prefix", function(){
-				var cb = function(){};
-				engine.keyOptions.prefix = "test";
-				engine.get("ns/1", cb);
-				expect(connection.hget.calledWith("test/ns", "1")).to.be.true;
-			});
-
-			it("should be called with default ns if non provided", function(){
-				var cb = function(){};
-				engine.get(1, cb);
-				expect(connection.hget.calledWith("default", 1)).to.be.true;
+			myres.save(function(err, res) {
+				expect(err).to.not.be.ok;
+				expect(res.status).to.equal(200);
+				done();
 			});
 
 		});
 
-		describe("save()", function(){
-			var engine;
-			var connection = { hset: function(){}, hget: function() {}, multi: function() {} };
-
-			beforeEach(function(){
-				
-				sinon.stub(connection, "hset", function(ns, id, val, cb){ cb(); });
-				sinon.stub(connection, 'hget', function(ns, id, cb){ cb(); });
-				sinon.stub(connection, 'multi', function(ns, id, cb){ cb(); });
-
-				engine = new Resred({
-					connection: connection
-				});
+		it("should update an existing document in redis", function(done) {
+			var myres = new TestResource({
+				"id": "otherid",
+				"indexedname": "othername"
 			});
 
-			afterEach(function(){
-				connection.hget.restore();
-				connection.hset.restore();
-				connection.multi.restore();
-			});
-
-			it("should call hset on connection", function(){
-				engine.save("ns/1", {}, function(){});
-				expect(connection.hset.calledOnce).to.be.true;
-			});
-
-			it("should execute callback when done", function(){
-				var callback = sinon.spy();
-				engine.save("ns/1", {}, callback);
-				expect(callback.calledOnce).to.be.true;
-			});
-
-			it("should be called with correctly prepared key arguments", function(){
-				var cb = function(){};
-				var data = {asdf: "asdf"};
-
-				engine.save("ns/22", data, cb);
-				expect(connection.hset.calledWith("ns", "22", JSON.stringify(data) )).to.be.true;
-			});
-
-			it("should be called with correctly prepared key arguments and prefix", function(){
-				var cb = function(){};
-				var data = {asdf: "asdf"};
-
-				engine.keyOptions.prefix = "test";
-				engine.save("ns/1", data, cb);
-				expect(connection.hset.calledWith("test/ns", "1", JSON.stringify(data))).to.be.true;
-			});
-
-			it("should be called with default ns if non provided", function(){
-				var cb = function(){};
-				var data = {asdf: "asdf"};
-
-				engine.save(1, data, cb);
-				expect(connection.hset.calledWith("default", 1, JSON.stringify(data))).to.be.true;
-			});
-
-		});
-
-		describe("destroy", function(){
-			var engine;
-			var connection = {hdel: function(){}};
-
-			beforeEach(function(){
-				sinon.stub(connection, "hdel", function(ns, id, cb){ cb(); });
-				engine = new Resred({
-					connection: connection
-				});
-			});
-
-			afterEach(function(){
-				connection.hdel.restore();
-			});
-
-			it("should invoke hdel of connection", function(){
-				engine.destroy("ns/1", function(){});
-				expect(connection.hdel.calledOnce).to.be.true;
-			});
-
-			it("should invoke callback when ready", function(){
-				var callback = sinon.spy();
-				engine.destroy("ns/1", callback);
-				expect(callback.calledOnce).to.be.true;
-			});
-
-		});
-
-		describe("put()", function() {
-			var engine;
-			var connection = { hset: function(){}, hget: function() {}, hexists: function() {} };
-
-			beforeEach(function(){
-				
-				sinon.stub(connection, "hset", function(ns, id, val, cb){ cb(); });
-				sinon.stub(connection, 'hget', function(ns, id, cb){ cb(); });
-
-				engine = new Resred({
-					connection: connection
-				});
-			});
-
-			afterEach(function(){
-				connection.hget.restore();
-				connection.hset.restore();
-				if(connection.hexists.restore) {
-					connection.hexists.restore();
-				}
-			});
-
-			it("should give 500 on error", function() {
-				sinon.stub(connection, 'hexists', function(ns, id, cb){ cb(true); });
-				engine.put("ns/1", {}, function(res){
-					expect(res.status).to.equal(500);
-				});
-			});
-
-			it("should give 409 conflict when doc already exists", function(){
-				sinon.stub(connection, 'hexists', function(ns, id, cb){ cb(null, 1); });
-				engine.put("ns/1", {}, function(res){
-					expect(res.status).to.equal(409);
-				});
-			});
-
-			it("should invoke save if res does not exist and no error", function(){
-				sinon.stub(connection, 'hexists', function(ns, id, cb){ cb(null, 0); });
-				sinon.stub(engine, "save");
-				engine.put("ns/1", {}, function(res){
-					expect(engine.save.calledOnce).to.be.true;
-					engine.save.restore();
+			myres.save(function(err, res) {
+				expect(err).to.not.be.ok;
+				myres.indexedname = "newname";
+				myres.save(function(err, res) {
+					expect(err).to.be.not.ok;
+					expect(res.status).to.equal(200);
+					expect(res.indexedname).to.equal("newname");
+					done();
 				});
 			});
 
 		});
 
-		describe("post()", function() {
-			var engine;
-			var connection = { hset: function(){}, hget: function() {}, hexists: function() {} };
+	});
 
-			beforeEach(function(){
-				
-				sinon.stub(connection, "hset", function(ns, id, val, cb){ cb(); });
-				sinon.stub(connection, 'hget', function(ns, id, cb){ cb(); });
+	describe("destroy()", function() {
 
-				engine = new Resred({
-					connection: connection
-				});
+		it("should remove an existing document from redis", function(done) {
+			var myres = new TestResource({
+				"id": "otherid",
+				"indexedname": "othername"
 			});
 
-			afterEach(function(){
-				connection.hget.restore();
-				connection.hset.restore();
-				if(connection.hexists.restore) {
-					connection.hexists.restore();
-				}
-			});
+			myres.save(function(err, res) {
+				expect(res.status).to.equal(200);
+				myres.destroy(function(err, res) {
+					expect(err).to.not.be.ok;
+					expect(res.status).to.equal(204);
 
-			it("should give 500 on error", function() {
-				sinon.stub(connection, 'hexists', function(ns, id, cb){ cb(true); });
-				engine.post("ns/1", {}, function(res){
-					expect(res.status).to.equal(500);
+					connection.hget("testresource", "otherid", function(err, res) {
+						expect(err).to.not.be.ok;
+						expect(res).to.equal(null);
+						done();
+					})
 				});
 			});
+		});
 
-			it("should give 404 not found when doc does not exists", function(){
-				sinon.stub(connection, 'hexists', function(ns, id, cb){ cb(null, 0); });
-				engine.post("ns/1", {}, function(res){
-					expect(res.status).to.equal(404);
-				});
+		it("should return correct status when removing a non existing document", function(done) {
+			var myres = new TestResource({
+				"id": "otherid",
+				"indexedname": "othername"
 			});
 
-			it("should invoke save if res does exist and no error", function(){
-				sinon.stub(connection, 'hexists', function(ns, id, cb){ cb(null, 1); });
-				sinon.stub(engine, "save");
-				engine.post("ns/1", {}, function(res){
-					expect(engine.save.calledOnce).to.be.true;
-					engine.save.restore();
+			myres.destroy(function(err, res) {
+				expect(res.status).to.equal(204);
+				done();
+			});
+		});
+		
+	});
+
+	describe("create() / post()", function() {
+
+		it("should return conflict error when called for an existing document", function(done) {
+			var myres = new TestResource({
+				"id": "myid",
+				"indexedname": "othername"
+			});
+
+			myres.save(function(err, res) {
+
+				engine.create("testresource/myid", {
+					"id": "myid",
+					"indexedname": "name"
+				}, function(err, res) {
+					expect(err.status).to.equal(409);
+					done();
 				});
+
 			});
 
 		});
 
-	});*/
+		it("should create new document in redis if none is existing", function(done) {
+
+			engine.create("testresource/myid", testDoc, function(err, res) {
+				expect(err).to.not.be.ok;
+				expect(res.status).to.equal(200);
+				TestResource.get("myid", function(err, doc) {
+					expect(doc.indexedname).to.equal("myname");
+				});
+				done();
+			})
+
+		});
+
+	});
+
+	describe("update() / put()", function() {
+
+		it("should return 404 error when updateing a non existing doc", function(done) {
+
+			engine.put("testresource/myid", testDoc, function(err, res) {
+				expect(err.status).to.equal(404);
+				done();
+			});
+
+		});
+
+		it("should update doc in redis if doc does already exist", function(done) {
+
+			var myres = new TestResource(testDoc);
+			myres.save(function(err, res) {
+				expect(res.status).to.equal(200);
+				engine.put("testresource/myid", {id:"myid", indexedname: "newname"}, function(err, res) {
+					expect(res.status).to.equal(200);
+					expect(res.indexedname).to.equal("newname");
+					done();
+				});
+			}) 
+
+		});
+
+	});
 
 });
